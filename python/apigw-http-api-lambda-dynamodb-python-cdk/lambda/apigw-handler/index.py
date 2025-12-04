@@ -2,10 +2,15 @@
 # SPDX-License-Identifier: MIT-0
 
 import boto3
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
 import os
 import json
 import logging
 import uuid
+
+# Patch all AWS SDK calls for X-Ray tracing
+patch_all()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
