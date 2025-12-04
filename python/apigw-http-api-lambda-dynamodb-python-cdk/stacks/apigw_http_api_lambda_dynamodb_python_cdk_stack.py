@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_iam as iam,
     Duration,
+    BundlingOptions,
 )
 from constructs import Construct
 
@@ -73,7 +74,16 @@ class ApigwHttpApiLambdaDynamodbPythonCdkStack(Stack):
             "ApiHandler",
             function_name="apigw_handler",
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset("lambda/apigw-handler"),
+            code=lambda_.Code.from_asset(
+                "lambda/apigw-handler",
+                bundling=BundlingOptions(
+                    image=lambda_.Runtime.PYTHON_3_9.bundling_image,
+                    command=[
+                        "bash", "-c",
+                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                    ],
+                ),
+            ),
             handler="index.handler",
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
