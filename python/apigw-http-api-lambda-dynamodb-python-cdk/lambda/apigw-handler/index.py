@@ -18,6 +18,7 @@ logger.setLevel(logging.INFO)
 dynamodb_client = boto3.client("dynamodb")
 
 
+@xray_recorder.capture('handler')
 def handler(event, context):
     table = os.environ.get("TABLE_NAME")
     logging.info(f"## Loaded table name from environemt variable DDB_TABLE: {table}")
