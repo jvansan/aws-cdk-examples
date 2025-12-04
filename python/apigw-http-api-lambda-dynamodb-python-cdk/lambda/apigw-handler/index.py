@@ -2,10 +2,15 @@
 # SPDX-License-Identifier: MIT-0
 
 import boto3
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
 import os
 import json
 import logging
 import uuid
+
+# Patch all AWS SDK calls for X-Ray tracing
+patch_all()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -13,6 +18,7 @@ logger.setLevel(logging.INFO)
 dynamodb_client = boto3.client("dynamodb")
 
 
+@xray_recorder.capture('handler')
 def handler(event, context):
     table = os.environ.get("TABLE_NAME")
     logging.info(f"## Loaded table name from environemt variable DDB_TABLE: {table}")

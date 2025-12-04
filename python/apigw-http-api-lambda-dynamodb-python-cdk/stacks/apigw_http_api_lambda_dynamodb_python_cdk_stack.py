@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_iam as iam,
     Duration,
+    BundlingOptions,
 )
 from constructs import Construct
 
@@ -33,7 +34,7 @@ class ApigwHttpApiLambdaDynamodbPythonCdkStack(Stack):
             ],
         )
         
-        # Create VPC endpoint
+        # Create VPC endpoint for DynamoDB
         dynamo_db_endpoint = ec2.GatewayVpcEndpoint(
             self,
             "DynamoDBVpce",
@@ -73,7 +74,16 @@ class ApigwHttpApiLambdaDynamodbPythonCdkStack(Stack):
             "ApiHandler",
             function_name="apigw_handler",
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset("lambda/apigw-handler"),
+            code=lambda_.Code.from_asset(
+                "lambda/apigw-handler",
+                bundling=BundlingOptions(
+                    image=lambda_.Runtime.PYTHON_3_9.bundling_image,
+                    command=[
+                        "bash", "-c",
+                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                    ],
+                ),
+            ),
             handler="index.handler",
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
@@ -81,6 +91,7 @@ class ApigwHttpApiLambdaDynamodbPythonCdkStack(Stack):
             ),
             memory_size=1024,
             timeout=Duration.minutes(5),
+            tracing=lambda_.Tracing.ACTIVE,
         )
 
         # grant permission to lambda to write to demo table
@@ -92,4 +103,7 @@ class ApigwHttpApiLambdaDynamodbPythonCdkStack(Stack):
             self,
             "Endpoint",
             handler=api_hanlder,
+            deploy_options=apigw_.StageOptions(
+                tracing_enabled=True,
+            ),
         )
